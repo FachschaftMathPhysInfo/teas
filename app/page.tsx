@@ -25,7 +25,7 @@ export default function Home() {
       .catch((e) => setLog("Fehler beim laden der Drucker: " + e.message));
   }, []);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     if (!file) return setLog("Bitte wähle eine PDF Datei");
     if (!printer) return setLog("Bitte wähle einen Drucker");
@@ -41,13 +41,21 @@ export default function Home() {
 
     setSending(true);
     setLog("Senden...");
+
     try {
       const res = await fetch("/api/print", { method: "POST", body: fd });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || JSON.stringify(json));
+
+      if (!res.ok) {
+        const message = json.error || JSON.stringify(json)
+        setLog("Fehler: " + message)
+        return
+      }
+
       setLog("Druckauftrag gesendet. Job id: " + json.jobId);
-    } catch (err: any) {
-      setLog("Fehler: " + err.message);
+    } catch (err) {
+      const error = err as Error;
+      setLog("Fehler: " + error.message);
     } finally {
       setSending(false);
     }
@@ -139,7 +147,7 @@ export default function Home() {
                 max={20}
                 value={copies}
                 onChange={(e) => setCopies(Number(e.target.value))}
-                className="mt-2 p-[5px] border text-gray-700 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 w-full"
+                className="mt-2 p-1.25 border text-gray-700 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 w-full"
               />
             </div>
 
