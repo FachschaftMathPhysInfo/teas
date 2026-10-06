@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim AS builder
+FROM node:26-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -6,10 +6,11 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+
 RUN npm run build
 
 
-FROM node:22-bookworm-slim AS final
+FROM node:26-bookworm-slim AS final
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -17,16 +18,18 @@ RUN apt-get update && \
       cups-client \
       cups-bsd \
       poppler-utils \
-      libcups2 \
       ca-certificates \
       && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY --from=builder /app .
+ENV NODE_ENV=production
+ENV PORT=3000
+
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
 
 EXPOSE 3000
 
-ENV NODE_ENV=production
-
-CMD ["npm", "run", "start"]
+CMD ["node", "server.js"]
