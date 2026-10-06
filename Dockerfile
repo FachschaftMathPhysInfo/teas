@@ -1,11 +1,16 @@
-FROM oven/bun:canary-debian AS builder
-WORKDIR /app
-COPY package.json bun.lock ./
-RUN bun install
-COPY . .
-RUN bun run build
+FROM node:22-bookworm-slim AS builder
 
-FROM debian:bookworm-slim AS final
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+
+FROM node:22-bookworm-slim AS final
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       cups \
@@ -16,10 +21,12 @@ RUN apt-get update && \
       ca-certificates \
       && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
-ENV PATH="/usr/local/bin:$PATH"
 WORKDIR /app
+
 COPY --from=builder /app .
+
 EXPOSE 3000
+
 ENV NODE_ENV=production
-CMD ["bun", "run", "start"]
+
+CMD ["npm", "run", "start"]
